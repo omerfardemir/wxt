@@ -4,6 +4,9 @@
 /// <reference path="./har-format/index.d.ts" />
 /// <reference path="./chrome-cast/index.d.ts" />
 
+// Helpers
+type SetRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+
 ////////////////////
 // Global object
 ////////////////////
@@ -149,20 +152,17 @@ export namespace Browser {
      * @since Chrome 88, MV3
      */
     export namespace action {
-        /** @deprecated Use BadgeColorDetails instead. */
-        export interface BadgeBackgroundColorDetails extends BadgeColorDetails {}
-
         export interface BadgeColorDetails {
-            /** An array of four integers in the range [0,255] that make up the RGBA color of the badge. For example, opaque red is [255, 0, 0, 255]. Can also be a string with a CSS value, with opaque red being #FF0000 or #F00. */
+            /** An array of four integers in the range [0,255] that make up the RGBA color of the badge. For example, opaque red is `[255, 0, 0, 255]`. Can also be a string with a CSS value, with opaque red being `#FF0000` or `#F00`. */
             color: string | ColorArray;
-            /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
+            /** Limits the change to when a particular tab is selected. Automatically resets when the tab is closed. */
             tabId?: number | undefined;
         }
 
         export interface BadgeTextDetails {
-            /** Any number of characters can be passed, but only about four can fit in the space. */
-            text: string;
-            /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
+            /** Any number of characters can be passed, but only about four can fit in the space. If an empty string (`''`) is passed, the badge text is cleared. If `tabId` is specified and `text` is null, the text for the specified tab is cleared and defaults to the global badge text. */
+            text?: string | undefined;
+            /** Limits the change to when a particular tab is selected. Automatically resets when the tab is closed. */
             tabId?: number | undefined;
         }
 
@@ -171,33 +171,34 @@ export namespace Browser {
         export interface TitleDetails {
             /** The string the action should display when moused over. */
             title: string;
-            /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
+            /** Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
             tabId?: number | undefined;
         }
 
         export interface PopupDetails {
-            /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
+            /** Limits the change to when a particular tab is selected. Automatically resets when the tab is closed. */
             tabId?: number | undefined;
-            /** The html file to show in a popup. If set to the empty string (''), no popup is shown. */
+            /** The html file to show in a popup. If set to the empty string (`''`), no popup is shown. */
             popup: string;
         }
 
         export interface TabIconDetails {
-            /** Optional. Either a relative image path or a dictionary {size -> relative image path} pointing to icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals scale, then image with size scale * 19 will be selected. Initially only scales 1 and 2 will be supported. At least one image must be specified. Note that 'details.path = foo' is equivalent to 'details.imageData = {'19': foo}'  */
+            /** Either a relative image path or a dictionary {size -> relative image path} pointing to icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals `scale`, then image with size `scale` \* n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.path = foo' is equivalent to 'details.path = {'16': foo}' */
             path?: string | { [index: number]: string } | undefined;
-            /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
+            /** Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
             tabId?: number | undefined;
-            /** Optional. Either an ImageData object or a dictionary {size -> ImageData} representing icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals scale, then image with size scale * 19 will be selected. Initially only scales 1 and 2 will be supported. At least one image must be specified. Note that 'details.imageData = foo' is equivalent to 'details.imageData = {'19': foo}'  */
+            /** Either an ImageData object or a dictionary {size -> ImageData} representing icon to be set. If the icon is specified as a dictionary, the actual image to be used is chosen depending on screen's pixel density. If the number of image pixels that fit into one screen space unit equals `scale`, then image with size `scale` \* n will be selected, where n is the size of the icon in the UI. At least one image must be specified. Note that 'details.imageData = foo' is equivalent to 'details.imageData = {'16': foo}' */
             imageData?: ImageData | { [index: number]: ImageData } | undefined;
         }
 
+        /** @since Chrome 99 */
         export interface OpenPopupOptions {
-            /** Optional. The id of the window to open the action popup in. Defaults to the currently-active window if unspecified.  */
+            /** The id of the window to open the action popup in. Defaults to the currently-active window if unspecified.  */
             windowId?: number | undefined;
         }
 
         export interface TabDetails {
-            /** Optional. The ID of the tab to query state for. If no tab is specified, the non-tab-specific state is returned.  */
+            /** The ID of the tab to query state for. If no tab is specified, the non-tab-specific state is returned.  */
             tabId?: number | undefined;
         }
 
@@ -217,232 +218,154 @@ export namespace Browser {
         }
 
         /**
-         * @since Chrome 88
          * Disables the action for a tab.
-         * @param tabId The id of the tab for which you want to modify the action.
-         * @return The `disable` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         * @param tabId The ID of the tab for which you want to modify the action.
+         *
+         * Can return its result via Promise.
          */
         export function disable(tabId?: number): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Disables the action for a tab.
-         * @param tabId The id of the tab for which you want to modify the action.
-         * @param callback
-         */
         export function disable(callback: () => void): void;
-        export function disable(tabId: number, callback: () => void): void;
+        export function disable(tabId: number | undefined, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Enables the action for a tab. By default, actions are enabled.
-         * @param tabId The id of the tab for which you want to modify the action.
-         * @return The `enable` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         * @param tabId The ID of the tab for which you want to modify the action.
+         *
+         * Can return its result via Promise.
          */
         export function enable(tabId?: number): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Enables the action for a tab. By default, actions are enabled.
-         * @param tabId The id of the tab for which you want to modify the action.
-         * @param callback
-         */
         export function enable(callback: () => void): void;
-        export function enable(tabId: number, callback: () => void): void;
+        export function enable(tabId: number | undefined, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Gets the background color of the action.
-         */
-        export function getBadgeBackgroundColor(details: TabDetails, callback: (result: ColorArray) => void): void;
-        /**
-         * @since Chrome 88
-         * Gets the background color of the action.
-         * @return The `getBadgeBackgroundColor` method provides its result via callback or returned as a `Promise` (MV3 only).
+         *
+         * Can return its result via Promise.
          */
         export function getBadgeBackgroundColor(details: TabDetails): Promise<ColorArray>;
+        export function getBadgeBackgroundColor(details: TabDetails, callback: (result: ColorArray) => void): void;
 
         /**
-         * @since Chrome 88
-         * Gets the badge text of the action. If no tab is specified, the non-tab-specific badge text is returned.
-         * If displayActionCountAsBadgeText is enabled, a placeholder text will be returned unless the
-         * declarativeNetRequestFeedback permission is present or tab-specific badge text was provided.
+         * Gets the badge text of the action. If no tab is specified, the non-tab-specific badge text is returned. If {@link declarativeNetRequest.ExtensionActionOptions.displayActionCountAsBadgeText displayActionCountAsBadgeText} is enabled, a placeholder text will be returned unless the {@link runtime.ManifestPermissions declarativeNetRequestFeedback} permission is present or tab-specific badge text was provided.
+         *
+         * Can return its result via Promise.
          */
+        export function getBadgeText(details: TabDetails): Promise<string>;
         export function getBadgeText(details: TabDetails, callback: (result: string) => void): void;
 
         /**
-         * @since Chrome 88
-         * Gets the badge text of the action. If no tab is specified, the non-tab-specific badge text is returned.
-         * If displayActionCountAsBadgeText is enabled, a placeholder text will be returned unless the
-         * declarativeNetRequestFeedback permission is present or tab-specific badge text was provided.
-         * @return The `getBadgeText` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function getBadgeText(details: TabDetails): Promise<string>;
-
-        /**
-         * @since Chrome 110
          * Gets the text color of the action.
+         *
+         * Can return its result via Promise.
+         * @since Chrome 110
          */
+        export function getBadgeTextColor(details: TabDetails): Promise<ColorArray>;
         export function getBadgeTextColor(details: TabDetails, callback: (result: ColorArray) => void): void;
 
         /**
-         * @since Chrome 110
-         * Gets the text color of the action.
-         * @return The `getBadgeTextColor` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function getBadgeTextColor(details: TabDetails): Promise<ColorArray>;
-
-        /**
-         * @since Chrome 88
          * Gets the html document set as the popup for this action.
+         *
+         * Can return its result via Promise.
          */
+        export function getPopup(details: TabDetails): Promise<string>;
         export function getPopup(details: TabDetails, callback: (result: string) => void): void;
 
         /**
-         * @since Chrome 88
-         * Gets the html document set as the popup for this action.
-         * @return The `getPopup` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function getPopup(details: TabDetails): Promise<string>;
-
-        /**
-         * @since Chrome 88
          * Gets the title of the action.
+         *
+         * Can return its result via Promise.
          */
+        export function getTitle(details: TabDetails): Promise<string>;
         export function getTitle(details: TabDetails, callback: (result: string) => void): void;
 
         /**
-         * @since Chrome 88
-         * Gets the title of the action.
-         * @return The `getTitle` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function getTitle(details: TabDetails): Promise<string>;
-
-        /**
-         * @since Chrome 91
          * Returns the user-specified settings relating to an extension's action.
+         *
+         * Can return its result via Promise.
+         * @since Chrome 91
          */
+        export function getUserSettings(): Promise<UserSettings>;
         export function getUserSettings(callback: (userSettings: UserSettings) => void): void;
 
         /**
-         * @since Chrome 91
-         * Returns the user-specified settings relating to an extension's action.
-         * @return The `getUserSettings` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function getUserSettings(): Promise<UserSettings>;
-
-        /**
+         * Indicates whether the extension action is enabled for a tab (or globally if no `tabId` is provided). Actions enabled using only {@link declarativeContent} always return false.
+         *
+         * Can return its result via Promise.
          * @since Chrome 110
-         * Indicates whether the extension action is enabled for a tab (or globally if no tabId is provided). Actions enabled using only declarativeContent always return false.
          */
+        export function isEnabled(tabId?: number): Promise<boolean>;
+        export function isEnabled(callback: (isEnabled: boolean) => void): void;
         export function isEnabled(tabId: number | undefined, callback: (isEnabled: boolean) => void): void;
 
         /**
-         * @since Chrome 110
-         * Indicates whether the extension action is enabled for a tab (or globally if no tabId is provided). Actions enabled using only declarativeContent always return false.
-         * @return True if the extension action is enabled.
-         */
-        export function isEnabled(tabId?: number): Promise<boolean>;
-
-        /**
-         * @since Chrome 99
-         * Opens the extension's popup.
+         * Opens the extension's popup. Between Chrome 118 and Chrome 126, this is only available to policy installed extensions.
+         *
          * @param options Specifies options for opening the popup.
-         * () => {...}
-         * @return The `openPopup` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
+         * @since Chrome 127
          */
         export function openPopup(options?: OpenPopupOptions): Promise<void>;
-
-        /**
-         * @since Chrome 99
-         * Opens the extension's popup.
-         * @param options Specifies options for opening the popup.
-         */
         export function openPopup(callback: () => void): void;
-        export function openPopup(options: OpenPopupOptions, callback: () => void): void;
+        export function openPopup(options: OpenPopupOptions | undefined, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Sets the background color for the badge.
-         * @return The `setBadgeBackgroundColor` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
          */
         export function setBadgeBackgroundColor(details: BadgeColorDetails): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Sets the background color for the badge.
-         */
         export function setBadgeBackgroundColor(details: BadgeColorDetails, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Sets the badge text for the action. The badge is displayed on top of the icon.
-         * @return The `setBadgeText` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
          */
         export function setBadgeText(details: BadgeTextDetails): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Sets the badge text for the action. The badge is displayed on top of the icon.
-         */
         export function setBadgeText(details: BadgeTextDetails, callback: () => void): void;
 
         /**
-         * @since Chrome 110
          * Sets the text color for the badge.
-         * @return The `setBadgeTextColor` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
+         * @since Chrome 110
          */
         export function setBadgeTextColor(details: BadgeColorDetails): Promise<void>;
-
-        /**
-         * @since Chrome 100
-         * Sets the text color for the badge.
-         */
         export function setBadgeTextColor(details: BadgeColorDetails, callback: () => void): void;
 
         /**
-         * @since Chrome 88
-         * Sets the icon for the action. The icon can be specified either as the path to an image file or as the pixel data from a canvas element,
-         * or as dictionary of either one of those. Either the path or the imageData property must be specified.
-         * @return The `setIcon` method provides its result via callback or returned as a `Promise` (MV3 only). Since Chrome 96.
+         * Sets the icon for the action. The icon can be specified either as the path to an image file or as the pixel data from a canvas element, or as dictionary of either one of those. Either the path or the imageData property must be specified.
+         *
+         * Can return its result via Promise.
          */
         export function setIcon(details: TabIconDetails): Promise<void>;
         export function setIcon(details: TabIconDetails, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Sets the html document to be opened as a popup when the user clicks on the action's icon.
-         * @return The `setPopup` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
          */
         export function setPopup(details: PopupDetails): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Sets the html document to be opened as a popup when the user clicks on the action's icon.
-         */
         export function setPopup(details: PopupDetails, callback: () => void): void;
 
         /**
-         * @since Chrome 88
          * Sets the title of the action. This shows up in the tooltip.
-         * @return The `setTitle` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+         *
+         * Can return its result via Promise.
          */
         export function setTitle(details: TitleDetails): Promise<void>;
-
-        /**
-         * @since Chrome 88
-         * Sets the title of the action. This shows up in the tooltip.
-         */
         export function setTitle(details: TitleDetails, callback: () => void): void;
 
         /** Fired when an action icon is clicked. This event will not fire if the action has a popup. */
-        export const onClicked: Browser.events.Event<(tab: Browser.tabs.Tab) => void>;
+        export const onClicked: events.Event<(tab: Browser.tabs.Tab) => void>;
 
         /**
          * Fired when user-specified settings relating to an extension's action change.
          * @since Chrome 130
          */
-        export const onUserSettingsChanged: Browser.events.Event<(change: UserSettingsChange) => void>;
+        export const onUserSettingsChanged: events.Event<(change: UserSettingsChange) => void>;
     }
 
     ////////////////////
@@ -1182,7 +1105,7 @@ export namespace Browser {
         /**
          * Sets the icon for the browser action. The icon can be specified either as the path to an image file or as the pixel data from a canvas element, or as dictionary of either one of those. Either the path or the imageData property must be specified.
          */
-        export function setIcon(details: TabIconDetails, callback?: Function): void;
+        export function setIcon(details: TabIconDetails, callback?: () => void): void;
 
         /** Fired when a browser action icon is clicked. This event will not fire if the browser action has a popup. */
         export var onClicked: BrowserClickedEvent;
@@ -1460,6 +1383,246 @@ export namespace Browser {
          * @param callback Called when websites' IndexedDB data has been cleared.
          */
         export function removeIndexedDB(options: RemovalOptions, callback: () => void): void;
+    }
+
+    ////////////////////
+    // Certificate Provider
+    ////////////////////
+    /**
+     * Use this API to expose certificates to the platform which can use these certificates for TLS authentications.
+     *
+     * Manifest: "certificateProvider"
+     * @platform ChromeOS only
+     * @since Chrome 46
+     */
+    export namespace certificateProvider {
+        /** Types of supported cryptographic signature algorithms. */
+        export enum Algorithm {
+            /**
+             * Specifies the RSASSA PKCS#1 v1.5 signature algorithm with the MD5-SHA-1 hashing. The extension must not prepend a DigestInfo prefix but only add PKCS#1 padding.
+             * @deprecated This algorithm is deprecated and will never be requested by Chrome as of version 109.
+             */
+            RSASSA_PKCS1_V1_5_MD5_SHA1 = "RSASSA_PKCS1_v1_5_MD5_SHA1",
+            /** Specifies the RSASSA PKCS#1 v1.5 signature algorithm with the SHA-1 hash function. */
+            RSASSA_PKCS1_V1_5_SHA1 = "RSASSA_PKCS1_v1_5_SHA1",
+            /** Specifies the RSASSA PKCS#1 v1.5 signature algorithm with the SHA-256 hashing function. */
+            RSASSA_PKCS1_V1_5_SHA256 = "RSASSA_PKCS1_v1_5_SHA256",
+            /** Specifies the RSASSA PKCS#1 v1.5 signature algorithm with the SHA-384 hashing function. */
+            RSASSA_PKCS1_V1_5_SHA384 = "RSASSA_PKCS1_v1_5_SHA384",
+            /** Specifies the RSASSA PKCS#1 v1.5 signature algorithm with the SHA-512 hashing function. */
+            RSASSA_PKCS1_V1_5_SHA512 = "RSASSA_PKCS1_v1_5_SHA512",
+            /** Specifies the RSASSA PSS signature algorithm with the SHA-256 hashing function, MGF1 mask generation function and the salt of the same size as the hash. */
+            RSASSA_PSS_SHA256 = "RSASSA_PSS_SHA256",
+            /** Specifies the RSASSA PSS signature algorithm with the SHA-384 hashing function, MGF1 mask generation function and the salt of the same size as the hash. */
+            RSASSA_PSS_SHA384 = "RSASSA_PSS_SHA384",
+            /** Specifies the RSASSA PSS signature algorithm with the SHA-512 hashing function, MGF1 mask generation function and the salt of the same size as the hash. */
+            RSASSA_PSS_SHA512 = "RSASSA_PSS_SHA512",
+        }
+
+        export interface CertificateInfo {
+            /** Must be the DER encoding of a X.509 certificate. Currently, only certificates of RSA keys are supported. */
+            certificate: ArrayBuffer;
+            /** Must be set to all hashes supported for this certificate. This extension will only be asked for signatures of digests calculated with one of these hash algorithms. This should be in order of decreasing hash preference. */
+            supportedHashes: `${Hash}`[];
+        }
+
+        /** @since Chrome 86 */
+        export interface CertificatesUpdateRequest {
+            /** Request identifier to be passed to {@link setCertificates}. */
+            certificatesRequestId: number;
+        }
+
+        /** @since Chrome 86 */
+        export interface ClientCertificateInfo {
+            /**
+             * The array must contain the DER encoding of the X.509 client certificate as its first element.
+             *
+             * This must include exactly one certificate.
+             */
+            certificateChain: ArrayBuffer[];
+            /** All algorithms supported for this certificate. The extension will only be asked for signatures using one of these algorithms. */
+            supportedAlgorithms: `${Algorithm}`[];
+        }
+
+        /**
+         * Types of errors that the extension can report.
+         * @since Chrome 86
+         */
+        export enum Error {
+            GENERAL_ERROR = "GENERAL_ERROR",
+        }
+
+        /** @deprecated Replaced by {@link Algorithm}.*/
+        export enum Hash {
+            /** Specifies the MD5 and SHA1 hashing algorithms. */
+            MD5_SHA1 = "MD5_SHA1",
+            /** Specifies the SHA1 hashing algorithm. */
+            SHA1 = "SHA1",
+            /** Specifies the SHA256 hashing algorithm. */
+            SHA256 = "SHA256",
+            /** Specifies the SHA384 hashing algorithm. */
+            SHA384 = "SHA384",
+            /** Specifies the SHA512 hashing algorithm. */
+            SHA512 = "SHA512",
+        }
+
+        /**
+         * The types of errors that can be presented to the user through the requestPin function.
+         * @since Chrome 57
+         */
+        export enum PinRequestErrorType {
+            /** Specifies the PIN is invalid. */
+            INVALID_PIN = "INVALID_PIN",
+            /** Specifies the PUK is invalid. */
+            INVALID_PUK = "INVALID_PUK",
+            /** Specifies the maximum attempt number has been exceeded. */
+            MAX_ATTEMPTS_EXCEEDED = "MAX_ATTEMPTS_EXCEEDED",
+            /** Specifies that the error cannot be represented by the above types. */
+            UNKNOWN_ERROR = "UNKNOWN_ERROR",
+        }
+
+        /**
+         * The type of code being requested by the extension with requestPin function.
+         * @since Chrome 57
+         */
+        export enum PinRequestType {
+            /** Specifies the requested code is a PIN. */
+            PIN = "PIN",
+            /** Specifies the requested code is a PUK. */
+            PUK = "PUK",
+        }
+
+        /** @since Chrome 57 */
+        export interface PinResponseDetails {
+            /** The code provided by the user. Empty if user closed the dialog or some other error occurred. */
+            userInput?: string | undefined;
+        }
+
+        /** @since Chrome 86 */
+        export interface ReportSignatureDetails {
+            /** Error that occurred while generating the signature, if any. */
+            error?: `${Error}` | undefined;
+            /** Request identifier that was received via the {@link onSignatureRequested} event. */
+            signRequestId: number;
+            /** The signature, if successfully generated. */
+            signature?: ArrayBuffer | undefined;
+        }
+
+        /** @since Chrome 57 */
+        export interface RequestPinDetails {
+            /** The number of attempts left. This is provided so that any UI can present this information to the user. Chrome is not expected to enforce this, instead stopPinRequest should be called by the extension with errorType = MAX_ATTEMPTS_EXCEEDED when the number of pin requests is exceeded. */
+            attemptsLeft?: number | undefined;
+            /** The error template displayed to the user. This should be set if the previous request failed, to notify the user of the failure reason. */
+            errorType?: `${PinRequestErrorType}` | undefined;
+            /** The type of code requested. Default is PIN. */
+            requestType?: `${PinRequestType}` | undefined;
+            /** The ID given by Chrome in SignRequest. */
+            signRequestId: number;
+        }
+
+        /** @since Chrome 86 */
+        export interface SetCertificatesDetails {
+            /** When called in response to {@link onCertificatesUpdateRequested}, should contain the received `certificatesRequestId` value. Otherwise, should be unset. */
+            certificatesRequestId?: number | undefined;
+            /** List of currently available client certificates. */
+            clientCertificates: ClientCertificateInfo[];
+            /** Error that occurred while extracting the certificates, if any. This error will be surfaced to the user when appropriate. */
+            error?: `${Error}` | undefined;
+        }
+
+        /**  @since Chrome 86 */
+        export interface SignatureRequest {
+            /** Signature algorithm to be used. */
+            algorithm: `${Algorithm}`;
+            /** The DER encoding of a X.509 certificate. The extension must sign `input` using the associated private key. */
+            certificate: ArrayBuffer;
+            /** Data to be signed. Note that the data is not hashed. */
+            input: ArrayBuffer;
+            /** Request identifier to be passed to {@link reportSignature}. */
+            signRequestId: number;
+        }
+
+        export interface SignRequest {
+            /** The DER encoding of a X.509 certificate. The extension must sign `digest` using the associated private key. */
+            certificate: ArrayBuffer;
+            /**  The digest that must be signed. */
+            digest: ArrayBuffer;
+            /** Refers to the hash algorithm that was used to create `digest`. */
+            hash: `${Hash}`;
+            /**
+             * The unique ID to be used by the extension should it need to call a method that requires it, e.g. requestPin.
+             * @since Chrome 57
+             */
+            signRequestId: number;
+        }
+
+        /** @since Chrome 57 */
+        export interface StopPinRequestDetails {
+            /** The error template. If present it is displayed to user. Intended to contain the reason for stopping the flow if it was caused by an error, e.g. MAX\_ATTEMPTS\_EXCEEDED. */
+            errorType?: `${PinRequestErrorType}` | undefined;
+            /** The ID given by Chrome in SignRequest. */
+            signRequestId: number;
+        }
+
+        /**
+         * Should be called as a response to {@link onSignatureRequested}.
+         *
+         * The extension must eventually call this function for every {@link onSignatureRequested} event; the API implementation will stop waiting for this call after some time and respond with a timeout error when this function is called.
+         *
+         * Can return its result via Promise since Chrome 96.
+         * @since Chrome 86
+         */
+        export function reportSignature(details: ReportSignatureDetails): Promise<void>;
+        export function reportSignature(details: ReportSignatureDetails, callback: () => void): void;
+
+        /**
+         * Requests the PIN from the user. Only one ongoing request at a time is allowed. The requests issued while another flow is ongoing are rejected. It's the extension's responsibility to try again later if another flow is in progress.
+         *
+         * Can return its result via Promise since Chrome 96.
+         * @param details Contains the details about the requested dialog.
+         * @since Chrome 57
+         */
+        export function requestPin(details: RequestPinDetails): Promise<PinResponseDetails | undefined>;
+        export function requestPin(
+            details: RequestPinDetails,
+            callback: (details?: PinResponseDetails | undefined) => void,
+        ): void;
+
+        /**
+         * Sets a list of certificates to use in the browser.
+         *
+         * The extension should call this function after initialization and on every change in the set of currently available certificates. The extension should also call this function in response to {@link onCertificatesUpdateRequested} every time this event is received.
+         *
+         * Can return its result via Promise since Chrome 96.
+         * @param details The certificates to set. Invalid certificates will be ignored.
+         * @since Chrome 86
+         */
+        export function setCertificates(details: SetCertificatesDetails): Promise<void>;
+        export function setCertificates(details: SetCertificatesDetails, callback: () => void): void;
+
+        /**
+         * Stops the pin request started by the {@link requestPin} function.
+         *
+         * Can return its result via Promise since Chrome 96.
+         * @param details Contains the details about the reason for stopping the request flow.
+         * @since Chrome 57
+         */
+        export function stopPinRequest(details: StopPinRequestDetails): Promise<void>;
+        export function stopPinRequest(details: StopPinRequestDetails, callback: () => void): void;
+
+        /**
+         * This event fires if the certificates set via {@link setCertificates} are insufficient or the browser requests updated information. The extension must call {@link setCertificates} with the updated list of certificates and the received `certificatesRequestId`.
+         * @since Chrome 86
+         */
+        export const onCertificatesUpdateRequested: events.Event<(request: CertificatesUpdateRequest) => void>;
+
+        /**
+         * This event fires every time the browser needs to sign a message using a certificate provided by this extension via {@link setCertificates}.
+         *
+         * The extension must sign the input data from `request` using the appropriate algorithm and private key and return it by calling {@link reportSignature} with the received `signRequestId`.
+         * @since Chrome 86
+         */
+        export const onSignatureRequested: events.Event<(request: SignatureRequest) => void>;
     }
 
     ////////////////////
@@ -2357,13 +2520,13 @@ export namespace Browser {
         export function sendCommand(
             target: DebuggerSession,
             method: string,
-            commandParams?: Object,
-        ): Promise<Object | undefined>;
+            commandParams?: { [key: string]: unknown },
+        ): Promise<object | undefined>;
         export function sendCommand(
             target: DebuggerSession,
             method: string,
-            commandParams?: Object,
-            callback?: (result?: Object) => void,
+            commandParams?: { [key: string]: unknown },
+            callback?: (result?: object) => void,
         ): void;
 
         /**
@@ -2377,7 +2540,7 @@ export namespace Browser {
         /** Fired when browser terminates debugging session for the tab. This happens when either the tab is being closed or Chrome DevTools is being invoked for the attached tab. */
         export const onDetach: Browser.events.Event<(source: Debuggee, reason: `${DetachReason}`) => void>;
         /** Fired whenever debugging target issues instrumentation event. */
-        export const onEvent: Browser.events.Event<(source: DebuggerSession, method: string, params?: Object) => void>;
+        export const onEvent: Browser.events.Event<(source: DebuggerSession, method: string, params?: object) => void>;
     }
 
     export { _debugger as debugger };
@@ -2587,7 +2750,7 @@ export namespace Browser {
             filter: RequestCookie;
         }
 
-        export interface RequestedEvent extends Browser.events.Event<Function> {}
+        export interface RequestedEvent extends Browser.events.Event<() => void> {}
 
         export var onRequest: RequestedEvent;
     }
@@ -2671,7 +2834,7 @@ export namespace Browser {
                     /**
                      * Set to undefined if the resource content was set successfully; describes error otherwise.
                      */
-                    error?: Object,
+                    error?: object,
                 ) => void,
             ): void;
         }
@@ -2944,13 +3107,13 @@ export namespace Browser {
              * @param rootTitle An optional title for the root of the expression tree.
              * @param callback A callback invoked after the sidebar is updated with the object.
              */
-            setObject(jsonObject: Object, rootTitle?: string, callback?: () => void): void;
+            setObject(jsonObject: { [key: string]: unknown }, rootTitle?: string, callback?: () => void): void;
             /**
              * Sets a JSON-compliant object to be displayed in the sidebar pane.
              * @param jsonObject An object to be displayed in context of the inspected page. Evaluated in the context of the caller (API client).
              * @param callback A callback invoked after the sidebar is updated with the object.
              */
-            setObject(jsonObject: Object, callback?: () => void): void;
+            setObject(jsonObject: { [key: string]: unknown }, callback?: () => void): void;
             /**
              * Sets an HTML page to be displayed in the sidebar pane.
              * @param path Relative path of an extension page to display within the sidebar.
@@ -2988,9 +3151,10 @@ export namespace Browser {
          * Specifies the function to be called when the user clicks a resource link in the Developer Tools window. To unset the handler, either call the method with no parameters or pass null as the parameter.
          * @param callback A function that is called when the user clicks on a valid resource link in Developer Tools window. Note that if the user clicks an invalid URL or an XHR, this function is not called.
          * Parameter resource: A devtools.inspectedWindow.Resource object for the resource that was clicked.
+         * Parameter lineNumber: Specifies the line number within the resource that was clicked.
          */
         export function setOpenResourceHandler(
-            callback?: (resource: Browser.devtools.inspectedWindow.Resource) => void,
+            callback?: (resource: Browser.devtools.inspectedWindow.Resource, lineNumber: number) => void,
         ): void;
         /**
          * @since Chrome 38
@@ -3037,19 +3201,19 @@ export namespace Browser {
              * @param recording A recording of the user interaction with the page. This should match [Puppeteer's recording schema](https://github.com/puppeteer/replay/blob/main/docs/api/interfaces/Schema.UserFlow.md).
              * @since Chrome 112
              */
-            replay?(recording: object): void;
+            replay?(recording: { [key: string]: unknown }): void;
 
             /**
              * Converts a recording from the Recorder panel format into a string.
              * @param recording A recording of the user interaction with the page. This should match [Puppeteer's recording schema](https://github.com/puppeteer/replay/blob/main/docs/api/interfaces/Schema.UserFlow.md).
              */
-            stringify?(recording: object): void;
+            stringify?(recording: { [key: string]: unknown }): void;
 
             /**
              * Converts a step of the recording from the Recorder panel format into a string.
              * @param step A step of the recording of a user interaction with the page. This should match [Puppeteer's step schema](https://github.com/puppeteer/replay/blob/main/docs/api/modules/Schema.md#step).
              */
-            stringifyStep?(step: object): void;
+            stringifyStep?(step: { [key: string]: unknown }): void;
         }
 
         /**
@@ -4293,7 +4457,7 @@ export namespace Browser {
             originAndPathMatches?: string | undefined;
         }
 
-        export interface Event<T extends Function> {
+        export interface Event<T extends (...args: any) => void> {
             /**
              * Registers an event listener callback to an event.
              * @param callback Called when an event occurs. The parameters of this function depend on the type of event.
@@ -4496,6 +4660,84 @@ export namespace Browser {
     }
 
     ////////////////////
+    // Extension Types
+    ////////////////////
+    /** The `Browser.extensionTypes` API contains type declarations for Chrome extensions. */
+    export namespace extensionTypes {
+        /**
+         * The origin of injected CSS.
+         * @since Chrome 66
+         */
+        export type CSSOrigin = "author" | "user";
+
+        /**
+         * The document lifecycle of the frame.
+         * @since Chrome 106
+         */
+        export type DocumentLifecycle = "prerender" | "active" | "cached" | "pending_deletion";
+
+        /**
+         * The type of frame.
+         * @since Chrome 106
+         */
+        export type FrameType = "outermost_frame" | "fenced_frame" | "sub_frame";
+
+        /** Details about the format and quality of an image. */
+        export interface ImageDetails {
+            /** The format of the resulting image. Default is `"jpeg"`. */
+            format?: ImageFormat | undefined;
+            /** When format is `"jpeg"`, controls the quality of the resulting image. This value is ignored for PNG images. As quality is decreased, the resulting image will have more visual artifacts, and the number of bytes needed to store it will decrease. */
+            quality?: number | undefined;
+        }
+
+        /**
+         * The format of an image.
+         * @since Chrome 44
+         */
+        export type ImageFormat = "jpeg" | "png";
+
+        /** Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time. */
+        export interface InjectDetails {
+            /** If allFrames is `true`, implies that the JavaScript or CSS should be injected into all frames of current page. By default, it's `false` and is only injected into the top frame. If `true` and `frameId` is set, then the code is inserted in the selected frame and all of its child frames. */
+            allFrames?: boolean | undefined;
+            /**
+             * JavaScript or CSS code to inject.
+             *
+             * **Warning:** Be careful using the `code` parameter. Incorrect use of it may open your extension to cross site scripting attacks
+             */
+            code?: string | undefined;
+            /**
+             * The origin of the CSS to inject. This may only be specified for CSS, not JavaScript. Defaults to `"author"`.
+             * @since Chrome 66
+             */
+            cssOrigin?: CSSOrigin | undefined;
+            /** JavaScript or CSS file to inject. */
+            file?: string | undefined;
+            /**
+             * The frame where the script or CSS should be injected. Defaults to 0 (the top-level frame).
+             * @since Chrome 50
+             */
+            frameId?: number | undefined;
+            /** If matchAboutBlank is true, then the code is also injected in about:blank and about:srcdoc frames if your extension has access to its parent document. Code cannot be inserted in top-level about:-frames. By default it is `false`. */
+            matchAboutBlank?: boolean;
+            /** The soonest that the JavaScript or CSS will be injected into the tab. Defaults to "document_idle". */
+            runAt?: RunAt | undefined;
+        }
+
+        /**
+         * The soonest that the JavaScript or CSS will be injected into the tab.
+         *
+         * "document_start" : Script is injected after any files from css, but before any other DOM is constructed or any other script is run.
+         *
+         * "document_end" : Script is injected immediately after the DOM is complete, but before subresources like images and frames have loaded.
+         *
+         * "document_idle" : The browser chooses a time to inject the script between "document_end" and immediately after the `window.onload` event fires. The exact moment of injection depends on how complex the document is and how long it is taking to load, and is optimized for page load speed. Content scripts running at "document_idle" don't need to listen for the `window.onload` event; they are guaranteed to run after the DOM completes. If a script definitely needs to run after `window.onload`, the extension can check if `onload` has already fired by using the `document.readyState` property.
+         * @since Chrome 44
+         */
+        export type RunAt = "document_start" | "document_end" | "document_idle";
+    }
+
+    ////////////////////
     // File Browser Handler
     ////////////////////
     /**
@@ -4518,7 +4760,7 @@ export namespace Browser {
 
         export interface SelectionResult {
             /** Optional. Selected file entry. It will be null if a file hasn't been selected.  */
-            entry?: Object | null | undefined;
+            entry?: object | null | undefined;
             /** Whether the file has been selected. */
             success: boolean;
         }
@@ -5399,7 +5641,7 @@ export namespace Browser {
         /**
          * Sets the default font size.
          */
-        export function setDefaultFontSize(details: DefaultFontSizeDetails, callback: Function): void;
+        export function setDefaultFontSize(details: DefaultFontSizeDetails, callback: () => void): void;
         /**
          * Gets the font for a given script and generic font family.
          * @return The `getFont` method provides its result via callback or returned as a `Promise` (MV3 only).
@@ -5414,25 +5656,25 @@ export namespace Browser {
          * @param details This parameter is currently unused.
          * @return The `getDefaultFontSize` method provides its result via callback or returned as a `Promise` (MV3 only).
          */
-        export function getDefaultFontSize(details?: Object): Promise<FontSizeDetails>;
+        export function getDefaultFontSize(details?: unknown): Promise<FontSizeDetails>;
         /**
          * Gets the default font size.
          * @param details This parameter is currently unused.
          */
         export function getDefaultFontSize(callback: (options: FontSizeDetails) => void): void;
-        export function getDefaultFontSize(details: Object, callback: (options: FontSizeDetails) => void): void;
+        export function getDefaultFontSize(details: unknown, callback: (options: FontSizeDetails) => void): void;
         /**
          * Gets the minimum font size.
          * @param details This parameter is currently unused.
          * @return The `getMinimumFontSize` method provides its result via callback or returned as a `Promise` (MV3 only).
          */
-        export function getMinimumFontSize(details?: object): Promise<FontSizeDetails>;
+        export function getMinimumFontSize(details?: unknown): Promise<FontSizeDetails>;
         /**
          * Gets the minimum font size.
          * @param details This parameter is currently unused.
          */
         export function getMinimumFontSize(callback: (options: FontSizeDetails) => void): void;
-        export function getMinimumFontSize(details: object, callback: (options: FontSizeDetails) => void): void;
+        export function getMinimumFontSize(details: unknown, callback: (options: FontSizeDetails) => void): void;
         /**
          * Sets the minimum font size.
          * @return The `setMinimumFontSize` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
@@ -5441,31 +5683,31 @@ export namespace Browser {
         /**
          * Sets the minimum font size.
          */
-        export function setMinimumFontSize(details: SetFontSizeDetails, callback: Function): void;
+        export function setMinimumFontSize(details: SetFontSizeDetails, callback: () => void): void;
         /**
          * Gets the default size for fixed width fonts.
          * @param details This parameter is currently unused.
          * @return The `getDefaultFixedFontSize` method provides its result via callback or returned as a `Promise` (MV3 only).
          */
-        export function getDefaultFixedFontSize(details?: Object): Promise<FontSizeDetails>;
+        export function getDefaultFixedFontSize(details?: unknown): Promise<FontSizeDetails>;
         /**
          * Gets the default size for fixed width fonts.
          * @param details This parameter is currently unused.
          */
         export function getDefaultFixedFontSize(callback: (details: FontSizeDetails) => void): void;
-        export function getDefaultFixedFontSize(details: Object, callback: (details: FontSizeDetails) => void): void;
+        export function getDefaultFixedFontSize(details: unknown, callback: (details: FontSizeDetails) => void): void;
         /**
          * Clears the default font size set by this extension, if any.
          * @param details This parameter is currently unused.
          * @return The `clearDefaultFontSize` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
          */
-        export function clearDefaultFontSize(details?: Object): Promise<void>;
+        export function clearDefaultFontSize(details?: unknown): Promise<void>;
         /**
          * Clears the default font size set by this extension, if any.
          * @param details This parameter is currently unused.
          */
-        export function clearDefaultFontSize(callback: Function): void;
-        export function clearDefaultFontSize(details: Object, callback: Function): void;
+        export function clearDefaultFontSize(callback: () => void): void;
+        export function clearDefaultFontSize(details: unknown, callback: () => void): void;
         /**
          * Sets the default size for fixed width fonts.
          * @return The `setDefaultFixedFontSize` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
@@ -5474,7 +5716,7 @@ export namespace Browser {
         /**
          * Sets the default size for fixed width fonts.
          */
-        export function setDefaultFixedFontSize(details: SetFontSizeDetails, callback: Function): void;
+        export function setDefaultFixedFontSize(details: SetFontSizeDetails, callback: () => void): void;
         /**
          * Clears the font set by this extension, if any.
          * @return The `clearFont` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
@@ -5483,7 +5725,7 @@ export namespace Browser {
         /**
          * Clears the font set by this extension, if any.
          */
-        export function clearFont(details: FontDetails, callback: Function): void;
+        export function clearFont(details: FontDetails, callback: () => void): void;
         /**
          * Sets the font for a given script and generic font family.
          * @return The `setFont` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
@@ -5492,19 +5734,19 @@ export namespace Browser {
         /**
          * Sets the font for a given script and generic font family.
          */
-        export function setFont(details: SetFontDetails, callback: Function): void;
+        export function setFont(details: SetFontDetails, callback: () => void): void;
         /**
          * Clears the minimum font size set by this extension, if any.
          * @param details This parameter is currently unused.
          * @return The `clearMinimumFontSize` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
          */
-        export function clearMinimumFontSize(details?: Object): Promise<void>;
+        export function clearMinimumFontSize(details?: unknown): Promise<void>;
         /**
          * Clears the minimum font size set by this extension, if any.
          * @param details This parameter is currently unused.
          */
-        export function clearMinimumFontSize(callback: Function): void;
-        export function clearMinimumFontSize(details: Object, callback: Function): void;
+        export function clearMinimumFontSize(callback: () => void): void;
+        export function clearMinimumFontSize(details: unknown, callback: () => void): void;
         /**
          * Gets a list of fonts on the system.
          * @return The `getFontList` method provides its result via callback or returned as a `Promise` (MV3 only).
@@ -5519,12 +5761,12 @@ export namespace Browser {
          * @param details This parameter is currently unused.
          * @return The `clearDefaultFixedFontSize` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
          */
-        export function clearDefaultFixedFontSize(details: Object): Promise<void>;
+        export function clearDefaultFixedFontSize(details: unknown): Promise<void>;
         /**
          * Clears the default fixed font size set by this extension, if any.
          * @param details This parameter is currently unused.
          */
-        export function clearDefaultFixedFontSize(details: Object, callback: Function): void;
+        export function clearDefaultFixedFontSize(details: unknown, callback: () => void): void;
 
         /** Fired when the default fixed font size setting changes. */
         export var onDefaultFixedFontSizeChanged: DefaultFixedFontSizeChangedEvent;
@@ -5553,12 +5795,12 @@ export namespace Browser {
             /** Optional. Time-to-live of the message in seconds. If it is not possible to send the message within that time, an onSendError event will be raised. A time-to-live of 0 indicates that the message should be sent immediately or fail if it's not possible. The maximum and a default value of time-to-live is 86400 seconds (1 day). */
             timeToLive?: number | undefined;
             /** Message data to send to the server. Case-insensitive goog. and google, as well as case-sensitive collapse_key are disallowed as key prefixes. Sum of all key/value pairs should not exceed gcm.MAX_MESSAGE_SIZE. */
-            data: Object;
+            data: { [key: string]: unknown };
         }
 
         export interface IncomingMessage {
             /** The message data. */
-            data: Object;
+            data: { [key: string]: unknown };
             /**
              * Optional.
              * The sender who issued the message.
@@ -5578,7 +5820,7 @@ export namespace Browser {
             /** Optional. The ID of the message with this error, if error is related to a specific message. */
             messageId?: string | undefined;
             /** Additional details related to the error, when available. */
-            detail: Object;
+            detail: object;
         }
 
         export interface MessageReceptionEvent extends Browser.events.Event<(message: IncomingMessage) => void> {}
@@ -6247,7 +6489,7 @@ export namespace Browser {
         }
 
         export interface MenuItemParameters {
-            items: Object[];
+            items: MenuItem[];
             engineId: string;
         }
 
@@ -7020,181 +7262,177 @@ export namespace Browser {
      * Permissions: "notifications"
      */
     export namespace notifications {
-        export type TemplateType = "basic" | "image" | "list" | "progress";
-
-        export interface ButtonOptions {
+        export interface NotificationButton {
+            /** @deprecated since Chrome 59. Button icons not visible for Mac OS X users. */
+            iconUrl?: string;
             title: string;
-            iconUrl?: string | undefined;
         }
 
-        export interface ItemOptions {
-            /** Title of one item of a list notification. */
-            title: string;
+        export interface NotificationItem {
             /** Additional details about this item. */
             message: string;
+            /** Title of one item of a list notification. */
+            title: string;
         }
 
-        export type NotificationOptions<T extends boolean = false> =
-            & {
-                /**
-                 * Optional.
-                 * Alternate notification content with a lower-weight font.
-                 * @since Chrome 31
-                 */
-                contextMessage?: string | undefined;
-                /** Optional. Priority ranges from -2 to 2. -2 is lowest priority. 2 is highest. Zero is default. */
-                priority?: number | undefined;
-                /** Optional. A timestamp associated with the notification, in milliseconds past the epoch (e.g. Date.now() + n). */
-                eventTime?: number | undefined;
-                /** Optional. Text and icons for up to two notification action buttons. */
-                buttons?: ButtonOptions[] | undefined;
-                /** Optional. Items for multi-item notifications. */
-                items?: ItemOptions[] | undefined;
-                /**
-                 * Optional.
-                 * Current progress ranges from 0 to 100.
-                 * @since Chrome 30
-                 */
-                progress?: number | undefined;
-                /**
-                 * Optional.
-                 * Whether to show UI indicating that the app will visibly respond to clicks on the body of a notification.
-                 * @since Chrome 32
-                 */
-                isClickable?: boolean | undefined;
-                /**
-                 * Optional.
-                 * A URL to the app icon mask. URLs have the same restrictions as iconUrl. The app icon mask should be in alpha channel, as only the alpha channel of the image will be considered.
-                 * @since Chrome 38
-                 */
-                appIconMaskUrl?: string | undefined;
-                /** Optional. A URL to the image thumbnail for image-type notifications. URLs have the same restrictions as iconUrl. */
-                imageUrl?: string | undefined;
-                /**
-                 * Indicates that the notification should remain visible on screen until the user activates or dismisses the notification.
-                 * This defaults to false.
-                 * @since Chrome 50
-                 */
-                requireInteraction?: boolean | undefined;
-                /**
-                 * Optional.
-                 * Indicates that no sounds or vibrations should be made when the notification is being shown. This defaults to false.
-                 * @since Chrome 70
-                 */
-                silent?: boolean | undefined;
-            }
-            & (T extends true ? {
-                    /**
-                     * A URL to the sender's avatar, app icon, or a thumbnail for image notifications.
-                     * URLs can be a data URL, a blob URL, or a URL relative to a resource within this extension's .crx file. Required for notifications.create method.
-                     */
-                    iconUrl: string;
-                    /** Main notification content. Required for notifications.create method. */
-                    message: string;
-                    /** Which type of notification to display. Required for notifications.create method. */
-                    type: TemplateType;
-                    /** Title of the notification (e.g. sender name for email). Required for notifications.create method. */
-                    title: string;
-                }
-                : {
-                    /**
-                     * Optional.
-                     * A URL to the sender's avatar, app icon, or a thumbnail for image notifications.
-                     * URLs can be a data URL, a blob URL, or a URL relative to a resource within this extension's .crx file. Required for notifications.create method.
-                     */
-                    iconUrl?: string | undefined;
-                    /** Optional. Main notification content. Required for notifications.create method. */
-                    message?: string | undefined;
-                    /** Optional. Which type of notification to display. Required for notifications.create method. */
-                    type?: TemplateType | undefined;
-                    /** Optional. Title of the notification (e.g. sender name for email). Required for notifications.create method. */
-                    title?: string | undefined;
-                });
+        export interface NotificationOptions {
+            /**
+             * A URL to the app icon mask. URLs have the same restrictions as {@link notifications.NotificationOptions.iconUrl iconUrl}.
+             *
+             * The app icon mask should be in alpha channel, as only the alpha channel of the image will be considered.
+             * @deprecated since Chrome 59. The app icon mask is not visible for Mac OS X users.
+             */
+            appIconMaskUrl?: string;
+            /** Text and icons for up to two notification action buttons. */
+            buttons?: NotificationButton[];
+            /** Alternate notification content with a lower-weight font. */
+            contextMessage?: string;
+            /** A timestamp associated with the notification, in milliseconds past the epoch (e.g. `Date.now() + n`). */
+            eventTime?: number;
+            /**
+             * A URL to the sender's avatar, app icon, or a thumbnail for image notifications.
+             *
+             * URLs can be a data URL, a blob URL, or a URL relative to a resource within this extension's .crx file
+             *
+             * **Note:** This value is required for the {@link notifications.create}() method.
+             */
+            iconUrl?: string;
+            /**
+             * A URL to the image thumbnail for image-type notifications. URLs have the same restrictions as {@link notifications.NotificationOptions.iconUrl iconUrl}.
+             * @deprecated since Chrome 59. The image is not visible for Mac OS X users.
+             */
+            imageUrl?: string;
+            /** @deprecated since Chrome 67. This UI hint is ignored as of Chrome 67 */
+            isClickable?: boolean;
+            /** Items for multi-item notifications. Users on Mac OS X only see the first item. */
+            items?: NotificationItem[];
+            /**
+             * Main notification content.
+             *
+             * **Note:** This value is required for the {@link notifications.create}() method.
+             */
+            message?: string;
+            /** Priority ranges from -2 to 2. -2 is lowest priority. 2 is highest. Zero is default. On platforms that don't support a notification center (Windows, Linux & Mac), -2 and -1 result in an error as notifications with those priorities will not be shown at all. */
+            priority?: number;
+            /** Current progress ranges from 0 to 100. */
+            progress?: number;
+            /**
+             * Indicates that the notification should remain visible on screen until the user activates or dismisses the notification. This defaults to false.
+             * @since Chrome 50
+             */
+            requireInteraction?: boolean;
+            /**
+             * Indicates that no sounds or vibrations should be made when the notification is being shown. This defaults to false.
+             * @since Chrome 70
+             */
+            silent?: boolean;
+            /**
+             * Title of the notification (e.g. sender name for email).
+             *
+             * **Note:** This value is required for the {@link notifications.create}() method.
+             */
+            title?: string;
+            /** Which type of notification to display.
+             *
+             * **Note:** This value is required for the {@link notifications.create}() method.
+             */
+            type?: `${TemplateType}`;
+        }
 
-        export interface NotificationClosedEvent
-            extends Browser.events.Event<(notificationId: string, byUser: boolean) => void>
-        {}
+        type NotificationCreateOptions = SetRequired<NotificationOptions, "type" | "title" | "message" | "iconUrl">;
 
-        export interface NotificationClickedEvent extends Browser.events.Event<(notificationId: string) => void> {}
+        export enum PermissionLevel {
+            /** Specifies that the user has elected to show notifications from the app or extension. This is the default at install time. */
+            GRANTED = "granted",
+            /** Specifies that the user has elected not to show notifications from the app or extension. */
+            DENIED = "denied",
+        }
 
-        export interface NotificationButtonClickedEvent
-            extends Browser.events.Event<(notificationId: string, buttonIndex: number) => void>
-        {}
+        export enum TemplateType {
+            /** Contains an icon, title, message, expandedMessage, and up to two buttons. */
+            BASIC = "basic",
+            /** Contains an icon, title, message, expandedMessage, image, and up to two buttons. */
+            IMAGE = "image",
+            /** Contains an icon, title, message, items, and up to two buttons. Users on Mac OS X only see the first item. */
+            LIST = "list",
+            /** Contains an icon, title, message, progress, and up to two buttons. */
+            PROGRESS = "progress",
+        }
 
-        export interface NotificationPermissionLevelChangedEvent extends Browser.events.Event<(level: string) => void> {}
-
-        export interface NotificationShowSettingsEvent extends Browser.events.Event<() => void> {}
-
-        /** The notification closed, either by the system or by user action. */
-        export var onClosed: NotificationClosedEvent;
-        /** The user clicked in a non-button area of the notification. */
-        export var onClicked: NotificationClickedEvent;
-        /** The user pressed a button in the notification. */
-        export var onButtonClicked: NotificationButtonClickedEvent;
         /**
-         * The user changes the permission level.
-         * @since Chrome 32
+         * Clears the specified notification.
+         * @param notificationId The id of the notification to be cleared. This is returned by {@link notifications.create} method.
+         *
+         * Can return its result via Promise since Chrome 116
          */
-        export var onPermissionLevelChanged: NotificationPermissionLevelChangedEvent;
-        /**
-         * The user clicked on a link for the app's notification settings.
-         * @since Chrome 32
-         */
-        export var onShowSettings: NotificationShowSettingsEvent;
+        export function clear(notificationId: string): Promise<boolean>;
+        export function clear(notificationId: string, callback: (wasCleared: boolean) => void): void;
 
         /**
          * Creates and displays a notification.
-         * @param notificationId Identifier of the notification. If not set or empty, an ID will automatically be generated. If it matches an existing notification, this method first clears that notification before proceeding with the create operation.
-         * The notificationId parameter is required before Chrome 42.
+         * @param notificationId Identifier of the notification. If not set or empty, an ID will automatically be generated. If it matches an existing notification, this method first clears that notification before proceeding with the create operation. The identifier may not be longer than 500 characters.
+         *
+         * The `notificationId` parameter is required before Chrome 42.
          * @param options Contents of the notification.
-         * @param callback Returns the notification id (either supplied or generated) that represents the created notification.
-         * The callback is required before Chrome 42.
+         *
+         * Can return its result via Promise since Chrome 116
          */
+        export function create(notificationId: string, options: NotificationCreateOptions): Promise<string>;
+        export function create(options: NotificationCreateOptions): Promise<string>;
         export function create(
             notificationId: string,
-            options: NotificationOptions<true>,
-            callback?: (notificationId: string) => void,
+            options: NotificationCreateOptions,
+            callback: (notificationId: string) => void,
         ): void;
+        export function create(options: NotificationCreateOptions, callback: (notificationId: string) => void): void;
+
         /**
-         * Creates and displays a notification.
-         * @param notificationId Identifier of the notification. If not set or empty, an ID will automatically be generated. If it matches an existing notification, this method first clears that notification before proceeding with the create operation.
-         * The notificationId parameter is required before Chrome 42.
-         * @param options Contents of the notification.
-         * @param callback Returns the notification id (either supplied or generated) that represents the created notification.
-         * The callback is required before Chrome 42.
+         * Retrieves all the notifications of this app or extension.
+         *
+         * Can return its result via Promise since Chrome 116
          */
-        export function create(options: NotificationOptions<true>, callback?: (notificationId: string) => void): void;
+        export function getAll(): Promise<{ [key: string]: true }>;
+        export function getAll(callback: (notifications: { [key: string]: true }) => void): void;
+
+        /**
+         * Retrieves whether the user has enabled notifications from this app or extension.
+         *
+         * Can return its result via Promise since Chrome 116
+         */
+        export function getPermissionLevel(): Promise<`${PermissionLevel}`>;
+        export function getPermissionLevel(callback: (level: `${PermissionLevel}`) => void): void;
+
         /**
          * Updates an existing notification.
-         * @param notificationId The id of the notification to be updated. This is returned by notifications.create method.
+         * @param notificationId The id of the notification to be updated. This is returned by {@link notifications.create} method.
          * @param options Contents of the notification to update to.
-         * @param callback Called to indicate whether a matching notification existed.
-         * The callback is required before Chrome 42.
+         *
+         * Can return its result via Promise since Chrome 116
          */
+        export function update(notificationId: string, options: NotificationOptions): Promise<boolean>;
         export function update(
             notificationId: string,
             options: NotificationOptions,
-            callback?: (wasUpdated: boolean) => void,
+            callback: (wasUpdated: boolean) => void,
         ): void;
+
+        /** The user pressed a button in the notification. */
+        export const onButtonClicked: events.Event<(notificationId: string, buttonIndex: number) => void>;
+
+        /** The user clicked in a non-button area of the notification. */
+        export const onClicked: events.Event<(notificationId: string) => void>;
+
+        /** The notification closed, either by the system or by user action. */
+        export const onClosed: events.Event<(notificationId: string, byUser: boolean) => void>;
+
+        /** The user changes the permission level. As of Chrome 47, only ChromeOS has UI that dispatches this event. */
+        export const onPermissionLevelChanged: events.Event<(level: `${PermissionLevel}`) => void>;
+
         /**
-         * Clears the specified notification.
-         * @param notificationId The id of the notification to be cleared. This is returned by notifications.create method.
-         * @param callback Called to indicate whether a matching notification existed.
-         * The callback is required before Chrome 42.
+         * The user clicked on a link for the app's notification settings. As of Chrome 47, only ChromeOS has UI that dispatches this event. As of Chrome 65, that UI has been removed from ChromeOS, too.
+         * @deprecated since Chrome 65. Custom notification settings button is no longer supported.
          */
-        export function clear(notificationId: string, callback?: (wasCleared: boolean) => void): void;
-        /**
-         * Retrieves all the notifications.
-         * @since Chrome 29
-         * @param callback Returns the set of notification_ids currently in the system.
-         */
-        export function getAll(callback: (notifications: Object) => void): void;
-        /**
-         * Retrieves whether the user has enabled notifications from this app or extension.
-         * @since Chrome 32
-         * @param callback Returns the current permission level.
-         */
-        export function getPermissionLevel(callback: (level: string) => void): void;
+        export const onShowSettings: events.Event<() => void>;
     }
 
     ////////////////////
@@ -7480,7 +7718,7 @@ export namespace Browser {
      */
     export namespace permissions {
         export interface Permissions {
-            /** The list of host permissions, including those specified in the `optional_permissions` or `permissions` keys in the manifest, and those associated with [Content Scripts](https://developer.Browser.com/docs/extensions/develop/concepts/content-scripts). */
+            /** The list of host permissions, including those specified in the `optional_permissions` or `permissions` keys in the manifest, and those associated with [Content Scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts). */
             origins?: string[];
             /** List of named permissions (does not include hosts or origins). */
             permissions?: Browser.runtime.ManifestPermissions[];
@@ -7628,7 +7866,7 @@ export namespace Browser {
          */
         export function getKeyPair(
             certificate: ArrayBuffer,
-            parameters: Object,
+            parameters: { [key: string]: unknown },
             callback: (publicKey: CryptoKey, privateKey: CryptoKey | null) => void,
         ): void;
         /**
@@ -7642,7 +7880,7 @@ export namespace Browser {
          */
         export function getKeyPairBySpki(
             publicKeySpkiDer: ArrayBuffer,
-            parameters: Object,
+            parameters: { [key: string]: unknown },
             callback: (publicKey: CryptoKey, privateKey: CryptoKey | null) => void,
         ): void;
         /** An implementation of WebCrypto's  SubtleCrypto that allows crypto operations on keys of client certificates that are available to this extension. */
@@ -7718,7 +7956,7 @@ export namespace Browser {
             /** The print job title. */
             title: string;
             /** Print ticket in  CJT format. */
-            ticket: Object;
+            ticket: { [key: string]: unknown };
             /** The document content type. Supported formats are "application/pdf" and "image/pwg-raster". */
             contentType: string;
             /** Blob containing the document data to print. Format must match |contentType|. */
@@ -7884,6 +8122,13 @@ export namespace Browser {
         export function cancelJob(jobId: string, callback: () => void): void;
 
         /**
+         * Returns the status of the print job. This call will fail with a runtime error if the print job with the given `jobId` doesn't exist. `jobId`: The id of the print job to return the status of. This should be the same id received in a {@link SubmitJobResponse}.
+         * @since Chrome 135
+         */
+        export function getJobStatus(jobId: string): Promise<`${JobStatus}`>;
+        export function getJobStatus(jobId: string, callback: (status: `${JobStatus}`) => void): void;
+
+        /**
          * Returns the status and capabilities of the printer in CDD format. This call will fail with a runtime error if no printers with given id are installed.
          * Can return its result via Promise in Manifest V3 or later since Chrome 100.
          */
@@ -7907,7 +8152,7 @@ export namespace Browser {
         /**
          * Event fired when the status of the job is changed. This is only fired for the jobs created by this extension.
          */
-        export const onJobStatusChanged: Browser.events.Event<(jobId: string, status: JobStatus) => void>;
+        export const onJobStatusChanged: Browser.events.Event<(jobId: string, status: `${JobStatus}`) => void>;
     }
 
     ////////////////////
@@ -8498,7 +8743,7 @@ export namespace Browser {
         }
 
         export interface ConnectionOptions {
-            /** Optional. Flag indicating whether or not the connection should be left open when the application is suspended (see Manage App Lifecycle: https://developer.Browser.com/apps/app_lifecycle).
+            /** Optional. Flag indicating whether or not the connection should be left open when the application is suspended (see Manage App Lifecycle: https://developer.chrome.com/apps/app_lifecycle).
              *  The default value is "false." When the application is loaded, any serial connections previously opened with persistent=true can be fetched with getConnections. */
             persistent?: boolean | undefined;
             /** Optional. An application-defined string to associate with the connection. */
@@ -8701,9 +8946,6 @@ export namespace Browser {
         export function addListener(callback: (info: OnReceiveErrorInfo) => void): void;
     }
 
-    type DocumentLifecycle = "prerender" | "active" | "cached" | "pending_deletion";
-    type FrameType = "outermost_frame" | "fenced_frame" | "sub_frame";
-
     ////////////////////
     // Runtime
     ////////////////////
@@ -8716,13 +8958,13 @@ export namespace Browser {
         /** The ID of the extension/app. */
         export var id: string;
 
-        /** https://developer.Browser.com/docs/extensions/reference/api/runtime#type-PlatformOs */
+        /** https://developer.chrome.com/docs/extensions/reference/api/runtime#type-PlatformOs */
         export type PlatformOs = "mac" | "win" | "android" | "cros" | "linux" | "openbsd" | "fuchsia";
-        /** https://developer.Browser.com/docs/extensions/reference/api/runtime#type-PlatformArch */
+        /** https://developer.chrome.com/docs/extensions/reference/api/runtime#type-PlatformArch */
         export type PlatformArch = "arm" | "arm64" | "x86-32" | "x86-64" | "mips" | "mips64";
-        /** https://developer.Browser.com/docs/extensions/reference/api/runtime#type-PlatformNaclArch */
+        /** https://developer.chrome.com/docs/extensions/reference/api/runtime#type-PlatformNaclArch */
         export type PlatformNaclArch = "arm" | "x86-32" | "x86-64" | "mips" | "mips64";
-        /** https://developer.Browser.com/docs/extensions/reference/api/runtime#type-ContextType */
+        /** https://developer.chrome.com/docs/extensions/reference/api/runtime#type-ContextType */
         export enum ContextType {
             TAB = "TAB",
             POPUP = "POPUP",
@@ -8731,7 +8973,7 @@ export namespace Browser {
             SIDE_PANEL = "SIDE_PANEL",
             DEVELOPER_TOOLS = "DEVELOPER_TOOLS",
         }
-        /** https://developer.Browser.com/docs/extensions/reference/api/runtime#type-OnInstalledReason */
+        /** https://developer.chrome.com/docs/extensions/reference/api/runtime#type-OnInstalledReason */
         export enum OnInstalledReason {
             INSTALL = "install",
             UPDATE = "update",
@@ -8859,7 +9101,7 @@ export namespace Browser {
              * The lifecycle the document that opened the connection is in at the time the port was created. Note that the lifecycle state of the document may have changed since port creation.
              * @since Chrome 106
              */
-            documentLifecycle?: DocumentLifecycle | undefined;
+            documentLifecycle?: extensionTypes.DocumentLifecycle | undefined;
             /**
              * A UUID of the document that opened the connection.
              * @since Chrome 106
@@ -8958,7 +9200,7 @@ export namespace Browser {
             default_popup?: string | undefined;
         }
 
-        /** Source: https://developer.Browser.com/docs/extensions/reference/permissions-list */
+        /** Source: https://developer.chrome.com/docs/extensions/reference/permissions-list */
         export type ManifestPermissions =
             | "accessibilityFeatures.modify"
             | "accessibilityFeatures.read"
@@ -9042,7 +9284,7 @@ export namespace Browser {
             | "webRequestBlocking"
             | "webRequestAuthProvider";
 
-        /** Source : https://developer.Browser.com/docs/extensions/reference/api/permissions */
+        /** Source : https://developer.chrome.com/docs/extensions/reference/api/permissions */
         export type ManifestOptionalPermissions = Exclude<
             ManifestPermissions,
             | "debugger"
@@ -9503,7 +9745,7 @@ export namespace Browser {
          */
         export function sendNativeMessage(
             application: string,
-            message: Object,
+            message: object,
             responseCallback: (response: any) => void,
         ): void;
         /**
@@ -9514,7 +9756,7 @@ export namespace Browser {
          */
         export function sendNativeMessage(
             application: string,
-            message: Object,
+            message: object,
         ): Promise<any>;
         /**
          * Sets the URL to be visited upon uninstallation. This may be used to clean up server-side data, do analytics, and implement surveys. Maximum 255 characters.
@@ -9693,7 +9935,7 @@ export namespace Browser {
             js?: string[];
             matches?: string[];
             persistAcrossSessions?: boolean;
-            runAt?: "document_start" | "document_end" | "document_idle";
+            runAt?: extensionTypes.RunAt;
             world?: ExecutionWorld;
         }
 
@@ -10200,7 +10442,11 @@ export namespace Browser {
             address: string;
         }
 
-        export function create(type: string, options?: Object, callback?: (createInfo: CreateInfo) => void): void;
+        export function create(
+            type: string,
+            options?: { [key: string]: unknown },
+            callback?: (createInfo: CreateInfo) => void,
+        ): void;
         export function destroy(socketId: number): void;
         export function connect(
             socketId: number,
@@ -11134,45 +11380,6 @@ export namespace Browser {
             defaultZoomFactor?: number | undefined;
         }
 
-        export interface InjectDetails {
-            /**
-             * Optional.
-             * If allFrames is true, implies that the JavaScript or CSS should be injected into all frames of current page. By default, it's false and is only injected into the top frame.
-             */
-            allFrames?: boolean | undefined;
-            /**
-             * Optional. JavaScript or CSS code to inject.
-             * Warning: Be careful using the code parameter. Incorrect use of it may open your extension to cross site scripting attacks.
-             */
-            code?: string | undefined;
-            /**
-             * Optional. The soonest that the JavaScript or CSS will be injected into the tab.
-             * One of: "document_start", "document_end", or "document_idle"
-             * @since Chrome 20
-             */
-            runAt?: string | undefined;
-            /** Optional. JavaScript or CSS file to inject. */
-            file?: string | undefined;
-            /**
-             * Optional.
-             * The frame where the script or CSS should be injected. Defaults to 0 (the top-level frame).
-             * @since Chrome 39
-             */
-            frameId?: number | undefined;
-            /**
-             * Optional.
-             * If matchAboutBlank is true, then the code is also injected in about:blank and about:srcdoc frames if your extension has access to its parent document. Code cannot be inserted in top-level about:-frames. By default it is false.
-             * @since Chrome 39
-             */
-            matchAboutBlank?: boolean | undefined;
-            /**
-             * Optional. The origin of the CSS to inject. This may only be specified for CSS, not JavaScript. Defaults to "author".
-             * One of: "author", or "user"
-             * @since Chrome 66
-             */
-            cssOrigin?: string | undefined;
-        }
-
         export interface CreateProperties {
             /** Optional. The position the tab should take in the window. The provided value will be clamped to between zero and the number of tabs in the window. */
             index?: number | undefined;
@@ -11252,19 +11459,6 @@ export namespace Browser {
              * @since Chrome 54
              */
             autoDiscardable?: boolean | undefined;
-        }
-
-        export interface CaptureVisibleTabOptions {
-            /**
-             * Optional.
-             * When format is "jpeg", controls the quality of the resulting image. This value is ignored for PNG images. As quality is decreased, the resulting image will have more visual artifacts, and the number of bytes needed to store it will decrease.
-             */
-            quality?: number | undefined;
-            /**
-             * Optional. The format of an image.
-             * One of: "jpeg", or "png"
-             */
-            format?: string | undefined;
         }
 
         export interface ReloadProperties {
@@ -11529,21 +11723,21 @@ export namespace Browser {
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @return The `executeScript` method provides its result via callback or returned as a `Promise` (MV3 only). The result of the script in every injected frame.
          */
-        export function executeScript(details: InjectDetails): Promise<any[]>;
+        export function executeScript(details: extensionTypes.InjectDetails): Promise<any[]>;
         /**
          * Injects JavaScript code into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @param callback Optional. Called after all the JavaScript has been executed.
          * Parameter result: The result of the script in every injected frame.
          */
-        export function executeScript(details: InjectDetails, callback?: (result: any[]) => void): void;
+        export function executeScript(details: extensionTypes.InjectDetails, callback?: (result: any[]) => void): void;
         /**
          * Injects JavaScript code into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param tabId Optional. The ID of the tab in which to run the script; defaults to the active tab of the current window.
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @return The `executeScript` method provides its result via callback or returned as a `Promise` (MV3 only). The result of the script in every injected frame.
          */
-        export function executeScript(tabId: number, details: InjectDetails): Promise<any[]>;
+        export function executeScript(tabId: number, details: extensionTypes.InjectDetails): Promise<any[]>;
         /**
          * Injects JavaScript code into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param tabId Optional. The ID of the tab in which to run the script; defaults to the active tab of the current window.
@@ -11551,7 +11745,11 @@ export namespace Browser {
          * @param callback Optional. Called after all the JavaScript has been executed.
          * Parameter result: The result of the script in every injected frame.
          */
-        export function executeScript(tabId: number, details: InjectDetails, callback?: (result: any[]) => void): void;
+        export function executeScript(
+            tabId: number,
+            details: extensionTypes.InjectDetails,
+            callback?: (result: any[]) => void,
+        ): void;
         /** Retrieves details about the specified tab. */
         export function get(tabId: number, callback: (tab: Tab) => void): void;
         /**
@@ -11685,7 +11883,7 @@ export namespace Browser {
          * Closes a tab.
          * @param tabId The tab to close.
          */
-        export function remove(tabId: number, callback: Function): void;
+        export function remove(tabId: number, callback: () => void): void;
         /**
          * Closes several tabs.
          * @param tabIds The list of tabs to close.
@@ -11696,7 +11894,7 @@ export namespace Browser {
          * Closes several tabs.
          * @param tabIds The list of tabs to close.
          */
-        export function remove(tabIds: number[], callback: Function): void;
+        export function remove(tabIds: number[], callback: () => void): void;
         /**
          * Captures the visible area of the currently active tab in the specified window. You must have <all_urls> permission to use this method.
          * @param callback
@@ -11726,14 +11924,17 @@ export namespace Browser {
          * @param options Optional. Details about the format and quality of an image.
          * @return The `captureVisibleTab` method provides its result via callback or returned as a `Promise` (MV3 only). A data URL which encodes an image of the visible area of the captured tab. May be assigned to the 'src' property of an HTML Image element for display.
          */
-        export function captureVisibleTab(options: CaptureVisibleTabOptions): Promise<string>;
+        export function captureVisibleTab(options: extensionTypes.ImageDetails): Promise<string>;
         /**
          * Captures the visible area of the currently active tab in the specified window. You must have <all_urls> permission to use this method.
          * @param options Optional. Details about the format and quality of an image.
          * @param callback
          * Parameter dataUrl: A data URL which encodes an image of the visible area of the captured tab. May be assigned to the 'src' property of an HTML Image element for display.
          */
-        export function captureVisibleTab(options: CaptureVisibleTabOptions, callback: (dataUrl: string) => void): void;
+        export function captureVisibleTab(
+            options: extensionTypes.ImageDetails,
+            callback: (dataUrl: string) => void,
+        ): void;
         /**
          * Captures the visible area of the currently active tab in the specified window. You must have <all_urls> permission to use this method.
          * @param windowId Optional. The target window. Defaults to the current window.
@@ -11742,7 +11943,7 @@ export namespace Browser {
          */
         export function captureVisibleTab(
             windowId: number,
-            options: CaptureVisibleTabOptions,
+            options: extensionTypes.ImageDetails,
         ): Promise<string>;
         /**
          * Captures the visible area of the currently active tab in the specified window. You must have <all_urls> permission to use this method.
@@ -11753,7 +11954,7 @@ export namespace Browser {
          */
         export function captureVisibleTab(
             windowId: number,
-            options: CaptureVisibleTabOptions,
+            options: extensionTypes.ImageDetails,
             callback: (dataUrl: string) => void,
         ): void;
         /**
@@ -11870,27 +12071,27 @@ export namespace Browser {
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @return The `insertCSS` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
          */
-        export function insertCSS(details: InjectDetails): Promise<void>;
+        export function insertCSS(details: extensionTypes.InjectDetails): Promise<void>;
         /**
          * Injects CSS into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @param callback Optional. Called when all the CSS has been inserted.
          */
-        export function insertCSS(details: InjectDetails, callback: Function): void;
+        export function insertCSS(details: extensionTypes.InjectDetails, callback: () => void): void;
         /**
          * Injects CSS into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param tabId Optional. The ID of the tab in which to insert the CSS; defaults to the active tab of the current window.
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @return The `insertCSS` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
          */
-        export function insertCSS(tabId: number, details: InjectDetails): Promise<void>;
+        export function insertCSS(tabId: number, details: extensionTypes.InjectDetails): Promise<void>;
         /**
          * Injects CSS into a page. For details, see the programmatic injection section of the content scripts doc.
          * @param tabId Optional. The ID of the tab in which to insert the CSS; defaults to the active tab of the current window.
          * @param details Details of the script or CSS to inject. Either the code or the file property must be set, but both may not be set at the same time.
          * @param callback Optional. Called when all the CSS has been inserted.
          */
-        export function insertCSS(tabId: number, details: InjectDetails, callback: Function): void;
+        export function insertCSS(tabId: number, details: extensionTypes.InjectDetails, callback: () => void): void;
         /**
          * Highlights the given tabs.
          * @since Chrome 16
@@ -12228,131 +12429,111 @@ export namespace Browser {
      */
     export namespace tabGroups {
         /** An ID that represents the absence of a group. */
-        export var TAB_GROUP_ID_NONE: -1;
+        export const TAB_GROUP_ID_NONE: -1;
 
-        export type ColorEnum = "grey" | "blue" | "red" | "yellow" | "green" | "pink" | "purple" | "cyan" | "orange";
+        /** The group's color. */
+        export enum Color {
+            BLUE = "blue",
+            CYAN = "cyan",
+            GREEN = "green",
+            GREY = "grey",
+            ORANGE = "orange",
+            PINK = "pink",
+            PURPLE = "purple",
+            RED = "red",
+            YELLOW = "yellow",
+        }
 
         export interface TabGroup {
             /** Whether the group is collapsed. A collapsed group is one whose tabs are hidden. */
             collapsed: boolean;
             /** The group's color. */
-            color: ColorEnum;
+            color: `${Color}`;
             /** The ID of the group. Group IDs are unique within a browser session. */
             id: number;
-            /** Optional. The title of the group. */
-            title?: string | undefined;
+            /** The title of the group. */
+            title?: string;
             /** The ID of the window that contains the group. */
             windowId: number;
         }
 
         export interface MoveProperties {
-            /** The position to move the group to. Use -1 to place the group at the end of the window. */
+            /** The position to move the group to. Use `-1` to place the group at the end of the window. */
             index: number;
-            /** Optional. The window to move the group to. Defaults to the window the group is currently in. Note that groups can only be moved to and from windows with Browser.windows.WindowType type "normal". */
-            windowId?: number | undefined;
+            /** The window to move the group to. Defaults to the window the group is currently in. Note that groups can only be moved to and from windows with {@link windows.windowTypeEnum windows.windowType} type `"normal"`. */
+            windowId?: number;
         }
 
         export interface QueryInfo {
-            /** Optional. Whether the groups are collapsed. */
-            collapsed?: boolean | undefined;
-            /** Optional. The color of the groups. */
-            color?: ColorEnum | undefined;
-            /** Optional. Match group titles against a pattern. */
-            title?: string | undefined;
-            /** Optional. The ID of the window that contains the group. */
-            windowId?: number | undefined;
+            /** Whether the groups are collapsed. */
+            collapsed?: boolean;
+            /** The color of the groups. */
+            color?: `${Color}`;
+            /** Match group titles against a pattern. */
+            title?: string;
+            /** The ID of the parent window, or {@link windows.WINDOW_ID_CURRENT} for the current window. */
+            windowId?: number;
         }
 
         export interface UpdateProperties {
-            /** Optional. Whether the group should be collapsed. */
-            collapsed?: boolean | undefined;
-            /** Optional. The color of the group. */
-            color?: ColorEnum | undefined;
-            /** Optional. The title of the group. */
-            title?: string | undefined;
+            /** Whether the group should be collapsed. */
+            collapsed?: boolean;
+            /** The color of the group. */
+            color?: `${Color}`;
+            /** The title of the group. */
+            title?: string;
         }
 
         /**
          * Retrieves details about the specified group.
-         * @param groupId The ID of the tab group.
-         * @param callback Called with the retrieved tab group.
+         *
+         * Can return its result via Promise since Chrome 90.
          */
+        export function get(groupId: number): Promise<TabGroup>;
         export function get(groupId: number, callback: (group: TabGroup) => void): void;
 
         /**
-         * Retrieves details about the specified group.
-         * @param groupId The ID of the tab group.
-         * @return The `get` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function get(groupId: number): Promise<TabGroup>;
-
-        /**
          * Moves the group and all its tabs within its window, or to a new window.
          * @param groupId The ID of the group to move.
-         * @param moveProperties Information on how to move the group.
-         * @return The `move` method provides its result via callback or returned as a `Promise` (MV3 only).
+         *
+         * Can return its result via Promise since Chrome 90.
          */
-        export function move(groupId: number, moveProperties: MoveProperties): Promise<TabGroup>;
-
-        /**
-         * Moves the group and all its tabs within its window, or to a new window.
-         * @param groupId The ID of the group to move.
-         * @param moveProperties Information on how to move the group.
-         * @param callback Optional.
-         */
+        export function move(groupId: number, moveProperties: MoveProperties): Promise<TabGroup | undefined>;
         export function move(
             groupId: number,
             moveProperties: MoveProperties,
-            callback: (group: TabGroup) => void,
+            callback: (group?: TabGroup) => void,
         ): void;
 
         /**
          * Gets all groups that have the specified properties, or all groups if no properties are specified.
-         * @param queryInfo Object with search parameters.
-         * @param callback Called with retrieved tab groups.
+         *
+         * Can return its result via Promise since Chrome 90.
          */
+        export function query(queryInfo: QueryInfo): Promise<TabGroup[]>;
         export function query(queryInfo: QueryInfo, callback: (result: TabGroup[]) => void): void;
 
         /**
-         * Gets all groups that have the specified properties, or all groups if no properties are specified.
-         * @param queryInfo Object with search parameters.
-         * @return The `query` method provides its result via callback or returned as a `Promise` (MV3 only).
-         */
-        export function query(queryInfo: QueryInfo): Promise<TabGroup[]>;
-
-        /**
-         * Modifies the properties of a group. Properties that are not specified in updateProperties are not modified.
+         * Modifies the properties of a group. Properties that are not specified in `updateProperties` are not modified.
          * @param groupId The ID of the group to modify.
-         * @param updateProperties Information on how to update the group.
-         * @return The `update` method provides its result via callback or returned as a `Promise` (MV3 only).
+         *
+         * Can return its result via Promise since Chrome 90.
          */
-        export function update(groupId: number, updateProperties: UpdateProperties): Promise<TabGroup>;
-
-        /**
-         * Modifies the properties of a group. Properties that are not specified in updateProperties are not modified.
-         * @param groupId The ID of the group to modify.
-         * @param updateProperties Information on how to update the group.
-         * @param callback Optional.
-         */
+        export function update(groupId: number, updateProperties: UpdateProperties): Promise<TabGroup | undefined>;
         export function update(
             groupId: number,
             updateProperties: UpdateProperties,
-            callback: (group: TabGroup) => void,
+            callback: (group?: TabGroup) => void,
         ): void;
 
-        export interface TabGroupCreatedEvent extends Browser.events.Event<(group: TabGroup) => void> {}
-        export interface TabGroupMovedEvent extends Browser.events.Event<(group: TabGroup) => void> {}
-        export interface TabGroupRemovedEvent extends Browser.events.Event<(group: TabGroup) => void> {}
-        export interface TabGroupUpdated extends Browser.events.Event<(group: TabGroup) => void> {}
-
         /** Fired when a group is created. */
-        export var onCreated: TabGroupCreatedEvent;
+        export const onCreated: events.Event<(group: TabGroup) => void>;
         /** Fired when a group is moved within a window. Move events are still fired for the individual tabs within the group, as well as for the group itself. This event is not fired when a group is moved between windows; instead, it will be removed from one window and created in another. */
-        export var onMoved: TabGroupMovedEvent;
-        /** Fired when a group is closed, either directly by the user or automatically because it contained zero. */
-        export var onRemoved: TabGroupRemovedEvent;
+        export const onMoved: events.Event<(group: TabGroup) => void>;
+        /** Fired when a group is closed, either directly by the user or automatically because it contained zero tabs. */
+        export const onRemoved: events.Event<(group: TabGroup) => void>;
         /** Fired when a group is updated. */
-        export var onUpdated: TabGroupUpdated;
+        export const onUpdated: events.Event<(group: TabGroup) => void>;
     }
 
     ////////////////////
@@ -12855,7 +13036,7 @@ export namespace Browser {
         export interface VpnConfigRemovalEvent extends Browser.events.Event<(id: string) => void> {}
 
         export interface VpnConfigCreationEvent
-            extends Browser.events.Event<(id: string, name: string, data: Object) => void>
+            extends Browser.events.Event<(id: string, name: string, data: { [key: string]: unknown }) => void>
         {}
 
         export interface VpnUiEvent extends Browser.events.Event<(event: string, id?: string) => void> {}
@@ -12872,19 +13053,19 @@ export namespace Browser {
          * @param id ID of the VPN configuration to destroy.
          * @param callback Optional. Called when the configuration is destroyed or if there is an error.
          */
-        export function destroyConfig(id: string, callback?: Function): void;
+        export function destroyConfig(id: string, callback?: () => void): void;
         /**
          * Sets the parameters for the VPN session. This should be called immediately after "connected" is received from the platform. This will succeed only when the VPN session is owned by the extension.
          * @param parameters The parameters for the VPN session.
          * @param callback Called when the parameters are set or if there is an error.
          */
-        export function setParameters(parameters: VpnSessionParameters, callback: Function): void;
+        export function setParameters(parameters: VpnSessionParameters, callback?: () => void): void;
         /**
          * Sends an IP packet through the tunnel created for the VPN session. This will succeed only when the VPN session is owned by the extension.
          * @param data The IP packet to be sent to the platform.
          * @param callback Optional. Called when the packet is sent or if there is an error.
          */
-        export function sendPacket(data: ArrayBuffer, callback?: Function): void;
+        export function sendPacket(data: ArrayBuffer, callback?: () => void): void;
         /**
          * Notifies the VPN session state to the platform. This will succeed only when the VPN session is owned by the extension.
          * @param state The VPN session state of the VPN client.
@@ -12892,7 +13073,7 @@ export namespace Browser {
          * failure: VPN connection failed.
          * @param callback Optional. Called when the notification is complete or if there is an error.
          */
-        export function notifyConnectionStateChanged(state: string, callback?: Function): void;
+        export function notifyConnectionStateChanged(state: string, callback?: () => void): void;
 
         /** Triggered when a message is received from the platform for a VPN configuration owned by the extension. */
         export var onPlatformMessage: VpnPlatformMessageEvent;
@@ -12942,6 +13123,123 @@ export namespace Browser {
     }
 
     ////////////////////
+    // Web Authentication Proxy
+    ////////////////////
+    /**
+     * The `Browser.webAuthenticationProxy` API lets remote desktop software running on a remote host intercept Web Authentication API (WebAuthn) requests in order to handle them on a local client.
+     *
+     * Permissions: "webAuthenticationProxy"
+     * @since Chrome 115, MV3
+     */
+    export namespace webAuthenticationProxy {
+        export interface CreateRequest {
+            /** The `PublicKeyCredentialCreationOptions` passed to `navigator.credentials.create()`, serialized as a JSON string. The serialization format is compatible with [`PublicKeyCredential.parseCreationOptionsFromJSON()`](https://w3c.github.io/webauthn/#sctn-parseCreationOptionsFromJSON). */
+            requestDetailsJson: string;
+            /** An opaque identifier for the request. */
+            requestId: number;
+        }
+
+        export interface CreateResponseDetails {
+            /** The `DOMException` yielded by the remote request, if any. */
+            error?: DOMExceptionDetails | undefined;
+            /** The `requestId` of the `CreateRequest`. */
+            requestId: number;
+            /** The `PublicKeyCredential`, yielded by the remote request, if any, serialized as a JSON string by calling [`PublicKeyCredential.toJSON()`](https://w3c.github.io/webauthn/#dom-publickeycredential-tojson). */
+            responseJson?: string | undefined;
+        }
+
+        export interface DOMExceptionDetails {
+            name: string;
+            message: string;
+        }
+
+        export interface GetRequest {
+            /** The `PublicKeyCredentialRequestOptions` passed to `navigator.credentials.get()`, serialized as a JSON string. The serialization format is compatible with [`PublicKeyCredential.parseRequestOptionsFromJSON()`](https://w3c.github.io/webauthn/#sctn-parseRequestOptionsFromJSON). */
+            requestDetailsJson: string;
+            /**  An opaque identifier for the request. */
+            requestId: number;
+        }
+
+        export interface GetResponseDetails {
+            /** The `DOMException` yielded by the remote request, if any. */
+            error?: DOMExceptionDetails | undefined;
+            /** The `requestId` of the `CreateRequest`. */
+            requestId: number;
+            /** The `PublicKeyCredential`, yielded by the remote request, if any, serialized as a JSON string by calling [`PublicKeyCredential.toJSON()`](https://w3c.github.io/webauthn/#dom-publickeycredential-tojson). */
+            responseJson?: string | undefined;
+        }
+
+        export interface IsUvpaaRequest {
+            /** An opaque identifier for the request. */
+            requestId: number;
+        }
+
+        export interface IsUvpaaResponseDetails {
+            isUvpaa: boolean;
+            requestId: number;
+        }
+
+        /**
+         * Makes this extension the active Web Authentication API request proxy.
+         *
+         * Remote desktop extensions typically call this method after detecting attachment of a remote session to this host. Once this method returns without error, regular processing of WebAuthn requests is suspended, and events from this extension API are raised.
+         *
+         * This method fails with an error if a different extension is already attached.
+         *
+         * The attached extension must call `detach()` once the remote desktop session has ended in order to resume regular WebAuthn request processing. Extensions automatically become detached if they are unloaded.
+         *
+         * Refer to the `onRemoteSessionStateChange` event for signaling a change of remote session attachment from a native application to to the (possibly suspended) extension.
+         */
+        export function attach(): Promise<string | undefined>;
+        export function attach(callback: (error?: string | undefined) => void): void;
+
+        /** Reports the result of a `navigator.credentials.create()` call. The extension must call this for every `onCreateRequest` event it has received, unless the request was canceled (in which case, an `onRequestCanceled` event is fired). */
+        export function completeCreateRequest(details: CreateResponseDetails): Promise<void>;
+        export function completeCreateRequest(details: CreateResponseDetails, callback: () => void): void;
+
+        /** Reports the result of a `navigator.credentials.get()` call. The extension must call this for every `onGetRequest` event it has received, unless the request was canceled (in which case, an `onRequestCanceled` event is fired). */
+        export function completeGetRequest(details: GetResponseDetails): Promise<void>;
+        export function completeGetRequest(details: GetResponseDetails, callback: () => void): void;
+
+        /** Reports the result of a `PublicKeyCredential.isUserVerifyingPlatformAuthenticator()` call. The extension must call this for every `onIsUvpaaRequest` event it has received. */
+        export function completeIsUvpaaRequest(details: IsUvpaaResponseDetails): Promise<void>;
+        export function completeIsUvpaaRequest(details: IsUvpaaResponseDetails, callback: () => void): void;
+
+        /**
+         * Removes this extension from being the active Web Authentication API request proxy.
+         *
+         * This method is typically called when the extension detects that a remote desktop session was terminated. Once this method returns, the extension ceases to be the active Web Authentication API request proxy.
+         *
+         * Refer to the `onRemoteSessionStateChange` event for signaling a change of remote session attachment from a native application to to the (possibly suspended) extension.
+         */
+        export function detach(): Promise<string | undefined>;
+        export function detach(callback: (error?: string | undefined) => void): void;
+
+        /** Fires when a WebAuthn `navigator.credentials.create()` call occurs. The extension must supply a response by calling `completeCreateRequest()` with the `requestId` from `requestInfo`. */
+        export const onCreateRequest: events.Event<(requestInfo: CreateRequest) => void>;
+
+        /** Fires when a WebAuthn `navigator.credentials.get()` call occurs. The extension must supply a response by calling `completeGetRequest()` with the `requestId` from `requestInfo` */
+        export const onGetRequest: events.Event<(requestInfo: GetRequest) => void>;
+
+        /** Fires when a `PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()` call occurs. The extension must supply a response by calling `completeIsUvpaaRequest()` with the `requestId` from `requestInfo` */
+        export const onIsUvpaaRequest: events.Event<(requestInfo: IsUvpaaRequest) => void>;
+
+        /**
+         * A native application associated with this extension can cause this event to be fired by writing to a file with a name equal to the extension's ID in a directory named `WebAuthenticationProxyRemoteSessionStateChange` inside the [default user data directory](https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md#default-location)
+         *
+         * The contents of the file should be empty. I.e., it is not necessary to change the contents of the file in order to trigger this event.
+         *
+         * The native host application may use this event mechanism to signal a possible remote session state change (i.e. from detached to attached, or vice versa) while the extension service worker is possibly suspended. In the handler for this event, the extension can call the `attach()` or `detach()` API methods accordingly.
+         *
+         * The event listener must be registered synchronously at load time.
+         */
+        export const onRemoteSessionStateChange: events.Event<() => void>;
+
+        /** Fires when a `onCreateRequest` or `onGetRequest` event is canceled (because the WebAuthn request was aborted by the caller, or because it timed out). When receiving this event, the extension should cancel processing of the corresponding request on the client side. Extensions cannot complete a request once it has been canceled. */
+        export const onRequestCanceled: events.Event<(requestId: number) => void>;
+    }
+
+    ////////////////////
     // Web Navigation
     ////////////////////
     /**
@@ -12969,11 +13267,11 @@ export namespace Browser {
             /** A UUID of the document loaded. */
             documentId: string;
             /** The lifecycle the document is in. */
-            documentLifecycle: DocumentLifecycle;
+            documentLifecycle: extensionTypes.DocumentLifecycle;
             /** True if the last navigation in this frame was interrupted by an error, i.e. the onErrorOccurred event fired. */
             errorOccurred: boolean;
             /** The type of frame the navigation occurred in. */
-            frameType: FrameType;
+            frameType: extensionTypes.FrameType;
             /** A UUID of the parent document owning this frame. This is not set if there is no parent. */
             parentDocumentId?: string | undefined;
             /** ID of frame that wraps the frame. Set to -1 of no parent frame exists. */
@@ -13012,11 +13310,11 @@ export namespace Browser {
             /** 0 indicates the navigation happens in the tab content window; a positive value indicates navigation in a subframe. Frame IDs are unique for a given tab and process. */
             frameId: number;
             /** The type of frame the navigation occurred in. */
-            frameType: FrameType;
+            frameType: extensionTypes.FrameType;
             /** A UUID of the document loaded. (This is not set for onBeforeNavigate callbacks.) */
             documentId?: string | undefined;
             /** The lifecycle the document is in. */
-            documentLifecycle: DocumentLifecycle;
+            documentLifecycle: extensionTypes.DocumentLifecycle;
             /** A UUID of the parent document owning this frame. This is not set if there is no parent. */
             parentDocumentId?: string | undefined;
             /**
@@ -13165,7 +13463,7 @@ export namespace Browser {
      * Manifest: "host_permissions"
      */
     export namespace webRequest {
-        interface WebRequestEvent<T extends Function, U extends string[]>
+        interface WebRequestEvent<T extends (...args: any) => void, U extends string[]>
             extends Omit<Browser.events.Event<T>, "addListener">
         {
             addListener(callback: T, filter: RequestFilter, extraInfoSpec?: U): void;
@@ -13299,8 +13597,8 @@ export namespace Browser {
             /** Optional. The HTTP request headers that are going to be sent out with this request. */
             requestHeaders?: HttpHeader[] | undefined;
             documentId: string;
-            documentLifecycle: DocumentLifecycle;
-            frameType: FrameType;
+            documentLifecycle: extensionTypes.DocumentLifecycle;
+            frameType: extensionTypes.FrameType;
             frameId: number;
             initiator?: string | undefined;
             parentDocumentId?: string | undefined;
@@ -13422,7 +13720,7 @@ export namespace Browser {
          * Can return its result via Promise in Manifest V3 or later since Chrome 116.
          */
         export function handlerBehaviorChanged(): Promise<void>;
-        export function handlerBehaviorChanged(callback: Function): void;
+        export function handlerBehaviorChanged(callback: () => void): void;
 
         /** Fired when a request is about to occur. */
         export const onBeforeRequest: WebRequestBodyEvent;
@@ -13756,7 +14054,7 @@ export namespace Browser {
          */
         export function remove(windowId: number): Promise<void>;
         /** Removes (closes) a window, and all the tabs inside it. */
-        export function remove(windowId: number, callback: Function): void;
+        export function remove(windowId: number, callback: () => void): void;
         /**
          * Gets the window that was most recently focused — typically the window 'on top'.
          */
@@ -13993,7 +14291,7 @@ export namespace Browser {
             tabId: number;
 
             /** The resource type of the request. */
-            type: ResourceType;
+            type: `${ResourceType}`;
 
             /** The URL of the request. */
             url: string;
@@ -14035,7 +14333,7 @@ export namespace Browser {
             responseHeaders?: ModifyHeaderInfo[] | undefined;
 
             /** The type of action to perform. */
-            type: RuleActionType;
+            type: `${RuleActionType}`;
         }
 
         export interface RuleCondition {
@@ -14043,7 +14341,7 @@ export namespace Browser {
              * Specifies whether the network request is first-party or third-party to the domain from which it originated.
              * If omitted, all requests are accepted.
              */
-            domainType?: DomainType | undefined;
+            domainType?: `${DomainType}` | undefined;
 
             /**
          * @deprecated since Chrome 101. Use initiatorDomains instead.
@@ -14130,7 +14428,7 @@ export namespace Browser {
              * Only one of requestMethods and excludedRequestMethods should be specified.
              * If neither of them is specified, all request methods are matched.
              */
-            excludedRequestMethods?: RequestMethod[] | undefined;
+            excludedRequestMethods?: `${RequestMethod}`[] | undefined;
 
             /**
              * List of resource types which the rule won't match.
@@ -14138,7 +14436,7 @@ export namespace Browser {
              * and {@link Browser.declarativeNetRequest.RuleCondition.excludedResourceTypes} should be specified.
              * If neither of them is specified, all resource types except "main_frame" are blocked.
              */
-            excludedResourceTypes?: ResourceType[] | undefined;
+            excludedResourceTypes?: `${ResourceType}`[] | undefined;
 
             /**
              * List of {@link Browser.tabs.Tab.id} which the rule should not match.
@@ -14169,7 +14467,7 @@ export namespace Browser {
              * Note: Specifying a {@link Browser.declarativeNetRequest.RuleCondition.requestMethods} rule condition will also exclude non-HTTP(s) requests,
              * whereas specifying {@link Browser.declarativeNetRequest.RuleCondition.excludedRequestMethods} will not.
              */
-            requestMethods?: RequestMethod[];
+            requestMethods?: `${RequestMethod}`[] | undefined;
 
             /**
              * List of {@link Browser.tabs.Tab.id} which the rule should not match.
@@ -14211,7 +14509,7 @@ export namespace Browser {
              *
              * Note: this must be specified for allowAllRequests rules and may only include the sub_frame and main_frame resource types.
              */
-            resourceTypes?: ResourceType[] | undefined;
+            resourceTypes?: `${ResourceType}`[] | undefined;
 
             /**
              * Rule does not match if the request matches any response header condition in this list (if specified). If both `excludedResponseHeaders` and `responseHeaders` are specified, then the `excludedResponseHeaders` property takes precedence.
@@ -14281,7 +14579,7 @@ export namespace Browser {
             header: string;
 
             /** The operation to be performed on a header. */
-            operation: HeaderOperation;
+            operation: `${HeaderOperation}`;
 
             /** The new value for the header.
              * Must be specified for append and set operations.
@@ -14363,7 +14661,7 @@ export namespace Browser {
             /** Specifies the reason why the regular expression is not supported.
              * Only provided if isSupported is false.
              */
-            reason?: UnsupportedRegexReason | undefined;
+            reason?: `${UnsupportedRegexReason}` | undefined;
         }
 
         export interface TabActionCountUpdate {
@@ -14583,7 +14881,7 @@ export namespace Browser {
         export function isRegexSupported(regexOptions: RegexOptions): Promise<IsRegexSupportedResult>;
 
         /** Configures if the action count for tabs should be displayed as the extension action's badge text and provides a way for that action count to be incremented. */
-        export function setExtensionActionOptions(options: ExtensionActionOptions, callback: Function): void;
+        export function setExtensionActionOptions(options: ExtensionActionOptions, callback: () => void): void;
 
         /**
          * Configures if the action count for tabs should be displayed as the extension action's badge text and provides a way for that action count to be incremented.
@@ -14615,7 +14913,7 @@ export namespace Browser {
          * In case of an error, runtime.lastError will be set and no change will be made to the rule set.
          * This can happen for multiple reasons, such as invalid rule format, duplicate rule ID, rule count limit exceeded, internal errors, and others.
          */
-        export function updateDynamicRules(options: UpdateRuleOptions, callback: Function): void;
+        export function updateDynamicRules(options: UpdateRuleOptions, callback: () => void): void;
 
         /** Modifies the current set of dynamic rules for the extension.
          * The rules with IDs listed in options.removeRuleIds are first removed, and then the rules given in options.addRules are added.
@@ -14641,7 +14939,7 @@ export namespace Browser {
          * In case of an error, runtime.lastError will be set and no change will be made to set of enabled rulesets.
          * This can happen for multiple reasons, such as invalid ruleset IDs, rule count limit exceeded, or internal errors.
          */
-        export function updateEnabledRulesets(options: UpdateRulesetOptions, callback: Function): void;
+        export function updateEnabledRulesets(options: UpdateRulesetOptions, callback: () => void): void;
 
         /** Updates the set of enabled static rulesets for the extension.
          * The rulesets with IDs listed in options.disableRulesetIds are first removed, and then the rulesets listed in options.enableRulesetIds are added.
@@ -14666,7 +14964,7 @@ export namespace Browser {
          * In case of an error, runtime.lastError will be set and no change will be made to the rule set.
          * This can happen for multiple reasons, such as invalid rule format, duplicate rule ID, rule count limit exceeded, and others.
          */
-        export function updateSessionRules(options: UpdateRuleOptions, callback: Function): void;
+        export function updateSessionRules(options: UpdateRuleOptions, callback: () => void): void;
 
         /** Modifies the current set of session scoped rules for the extension.
          * The rules with IDs listed in options.removeRuleIds are first removed, and then the rules given in options.addRules are added.
@@ -14918,7 +15216,7 @@ export namespace Browser {
             /** Specifies which pages this user script will be injected into. See Match Patterns for more details on the syntax of these strings. This property must be specified for ${ref:register}. */
             matches?: string[];
             /** Specifies when JavaScript files are injected into the web page. The preferred and default value is document_idle */
-            runAt?: RunAt;
+            runAt?: extensionTypes.RunAt;
             /** The JavaScript execution environment to run the script in. The default is `USER_SCRIPT` */
             world?: ExecutionWorld;
             /**
@@ -14951,11 +15249,6 @@ export namespace Browser {
             /** The path of the JavaScript file to inject relative to the extension's root directory. Exactly one of file or code must be specified. */
             file?: string;
         }
-
-        /**
-         * Enum for the run-at property.
-         */
-        export type RunAt = "document_start" | "document_end" | "document_idle";
 
         /**
          * Configures the `USER_SCRIPT` execution environment.
