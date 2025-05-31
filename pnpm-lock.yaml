@@ -303,7 +303,7 @@ catalogs:
 
 patchedDependencies:
   markdown-it-footnote:
-    hash: 5b74a0001a771ff5df790dd36b6883c4794e1f666b231499edb2d65eae8f4930
+    hash: ue34jdgdx43siqdj557feoepzq
     path: patches/markdown-it-footnote.patch
 
 importers:
@@ -348,7 +348,7 @@ importers:
         version: 15.5.0
       markdown-it-footnote:
         specifier: 'catalog:'
-        version: 4.0.0(patch_hash=5b74a0001a771ff5df790dd36b6883c4794e1f666b231499edb2d65eae8f4930)
+        version: 4.0.0(patch_hash=ue34jdgdx43siqdj557feoepzq)
       nano-spawn:
         specifier: 'catalog:'
         version: 0.2.0
@@ -450,6 +450,9 @@ importers:
       unbuild:
         specifier: 'catalog:'
         version: 3.5.0(sass@1.86.3)(typescript@5.8.3)(vue@3.5.13(typescript@5.8.3))
+      vitest:
+        specifier: 'catalog:'
+        version: 3.1.1(@types/node@20.17.30)(happy-dom@17.4.4)(jiti@2.4.2)(sass@1.86.3)(tsx@4.19.3)(yaml@2.7.0)
       wxt:
         specifier: workspace:*
         version: link:../wxt
@@ -8305,7 +8308,7 @@ snapshots:
 
   mark.js@8.11.1: {}
 
-  markdown-it-footnote@4.0.0(patch_hash=5b74a0001a771ff5df790dd36b6883c4794e1f666b231499edb2d65eae8f4930): {}
+  markdown-it-footnote@4.0.0(patch_hash=ue34jdgdx43siqdj557feoepzq): {}
 
   marked@4.3.0: {}
 
