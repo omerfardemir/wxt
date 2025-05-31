@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   markdown-it-footnote:
-    hash: 5b74a0001a771ff5df790dd36b6883c4794e1f666b231499edb2d65eae8f4930
+    hash: ue34jdgdx43siqdj557feoepzq
     path: patches/markdown-it-footnote.patch
 
 importers:
@@ -51,7 +51,7 @@ importers:
         version: 15.5.1
       markdown-it-footnote:
         specifier: ^4.0.0
-        version: 4.0.0(patch_hash=5b74a0001a771ff5df790dd36b6883c4794e1f666b231499edb2d65eae8f4930)
+        version: 4.0.0(patch_hash=ue34jdgdx43siqdj557feoepzq)
       nano-spawn:
         specifier: ^0.2.0
         version: 0.2.0
@@ -153,6 +153,9 @@ importers:
       unbuild:
         specifier: ^3.5.0
         version: 3.5.0(sass@1.87.0)(typescript@5.8.3)(vue@3.5.13(typescript@5.8.3))
+      vitest:
+        specifier: ^3.1.2
+        version: 3.1.2(@types/node@20.17.30)(happy-dom@17.4.6)(jiti@2.4.2)(sass@1.87.0)(tsx@4.19.4)(yaml@2.7.0)
       wxt:
         specifier: workspace:*
         version: link:../wxt
